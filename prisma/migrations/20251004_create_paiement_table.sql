@@ -1,0 +1,14 @@
+-- Migration: create paiement table
+-- Date: 2025-10-04
+
+CREATE TABLE IF NOT EXISTS paiement (
+  id SERIAL PRIMARY KEY,
+  commande_id INTEGER REFERENCES commande(id) ON DELETE CASCADE,
+  montant NUMERIC(12,2) DEFAULT 0 NOT NULL,
+  mode_paiement VARCHAR(50) DEFAULT 'cash',
+  date_paiement TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_paiement_commande_id ON paiement(commande_id);

@@ -1,0 +1,161 @@
+Test API (Postman) - flux complet : création user → login → produits/services/clients → commande → génération facture → vente/reçu
+Base URL (local) : http://localhost:3000/api
+Remarques : utiliser les endpoints protégés avec header Authorization: Bearer <accessToken>
+
+1) Démarrer le serveur
+- Assurer .env configuré (DB, JWT_SECRET, SMTP_*)
+- npm run dev  (ou node app.js)
+
+2) Créer un utilisateur admin
+Option A — via endpoint (si ouvert) :
+POST /api/auth/register
+Headers: Content-Type: application/json
+Body:
+{
+  "nom": "Admin",
+  "prenom": "Root",
+  "email": "admin@example.com",
+  "telephone": "0000000000",
+  "role": "ADMIN",
+  "password": "Admin1234"
+}
+Réponse attendue: 201 + user sans password
+
+Option B — si register restreint : insérer directement en DB (psql)
+-- hash le password avec bcryptjs localement ou utiliser node script
+-- exemple SQL si password_hash déjà hashé :
+INSERT INTO utilisateur (email, password_hash, nom, prenom, telephone, role, actif, createdat)
+VALUES ('admin@example.com','$2a$10$..........', 'Admin','Root','000','ADMIN', true, CURRENT_TIMESTAMP);
+
+3) Login -> récupérer tokens
+POST /api/auth/login
+Headers: Content-Type: application/json
+Body:
+{
+  "email": "admin@example.com",
+  "password": "Admin1234"
+}
+Réponse attendue:
+{
+  "accessToken": "eyJ...",
+  "refreshToken": "eyJ..."
+}
+
+Note: garder accessToken pour Authorization header.
+
+4) Créer un produit
+POST /api/produits
+Headers:
+- Content-Type: application/json
+- Authorization: Bearer <accessToken>
+Body:
+{
+  "nom": "Produit A",
+  "description": "Desc",
+  "prix_unitaire": 25.5,
+  "stock_actuel": 100,
+  "actif": true
+}
+Réponse: 201 + created product (id utilisé ensuite)
+
+5) Créer un service
+POST /api/services
+Headers: Authorization, Content-Type
+Body:
+{
+  "nom": "Service X",
+  "description": "Desc service",
+  "prix_unitaire": 50,
+  "actif": true
+}
+Réponse: 201 + service
+
+6) Créer un client
+POST /api/clients
+Headers: Authorization, Content-Type
+Body:
+{
+  "nom": "John",
+  "prenom": "Doe",
+  "email": "john.doe@example.com",
+  "telephone": "1234567890"
+}
+Réponse: 201 + client.id
+
+7) Créer une commande (produits + services)
+POST /api/commandes
+Headers: Authorization, Content-Type
+Body exemple (utiliser ids réels):
+{
+  "clientId": 1,
+  "produits": [
+    { "id": 1, "quantite": 2 }
+  ],
+  "services": [
+    { "id": 1, "quantite": 1 }
+  ]
+}
+Réponse: 201 + commande créé avec items et montant_total
+Vérifier que les stocks produits ont été décrémentés (GET /api/produits/:id)
+
+8) Générer la facture pour la commande
+POST /api/commandes/:id/invoice
+Headers: Authorization
+Remplacez :id par l'id de la commande créée.
+Réponse attendue:
+{
+  "success": true,
+  "data": { "invoice": { ... } },
+  "message": "Facture générée avec succès"
+}
+Vérifier en DB : SELECT * FROM facture WHERE commande_id = <id>;
+Le champ fichier doit contenir le chemin/URL du PNG généré.
+
+9) Créer une vente et générer reçu
+POST /api/ventes
+Headers: Authorization, Content-Type
+Body exemple:
+{
+  "commandeId": null,
+  "clientId": 1,
+  "montant": 76.5,
+  "statut": "PAID",
+  "items": [
+    { "produit_id": 1, "nom": "Produit A", "quantite": 1, "prix_unitaire": 25.5, "total": 25.5 }
+  ]
+}
+Réponse: 201 + vente et recu (reçu sauvegardé en table recu)
+
+10) Vérifications complémentaires
+- Consulter tables via psql:
+  SELECT * FROM commande WHERE id = <id>;
+  SELECT * FROM commande_item WHERE commande_id = <id>;
+  SELECT * FROM facture WHERE commande_id = <id>;
+  SELECT * FROM vente WHERE id = <vente_id>;
+  SELECT * FROM vente_item WHERE vente_id = <vente_id>;
+  SELECT * FROM recu WHERE vente_id = <vente_id>;
+- Vérifier fichiers PNG générés dans le chemin retourné (fichier accessible sur le serveur)
+
+11) Tests Postman (suggestion rapide)
+- Créer une collection "RealTech-Tests"
+- Variables d'environnement:
+  baseUrl = http://localhost:3000/api
+  adminEmail, adminPass, accessToken, refreshToken, lastProductId, lastServiceId, lastClientId, lastCommandeId, lastVenteId
+- Requests dans l'ordre :
+  1. POST {{baseUrl}}/auth/register (si dispo)
+  2. POST {{baseUrl}}/auth/login -> sauvegarder accessToken
+  3. POST {{baseUrl}}/produits (save id)
+  4. POST {{baseUrl}}/services (save id)
+  5. POST {{baseUrl}}/clients (save id)
+  6. POST {{baseUrl}}/commandes (save id)
+  7. POST {{baseUrl}}/commandes/{{lastCommandeId}}/invoice
+  8. POST {{baseUrl}}/ventes (save id)
+  9. GET checks /produits/:id /commandes/:id /facture etc.
+
+12) Debugging si erreurs courantes
+- 401 Token : vérifier header Authorization: Bearer <accessToken>
+- 500 DB : vérifier PG env vars (DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT)
+- Paths modules : importer avec extension .js dans fichiers routes/controllers
+- Si endpoint manquant (ex : /commandes/:id/invoice) vérifier routes/commandeRoutes.js et ajuster path selon implémentation.
+
+Fin.

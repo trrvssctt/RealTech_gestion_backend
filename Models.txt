@@ -1,0 +1,164 @@
+-- Create the Utilisateur table
+CREATE TABLE utilisateur (
+    id SERIAL PRIMARY KEY,
+    nom VARCHAR(255) NOT NULL,
+    prenom VARCHAR(255),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    telephone VARCHAR(20),
+    role VARCHAR(50) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    actif BOOLEAN DEFAULT TRUE,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create the Client table
+CREATE TABLE client (
+    id SERIAL PRIMARY KEY,
+    nom VARCHAR(255) NOT NULL,
+    prenom VARCHAR(255),
+    email VARCHAR(255),
+    telephone VARCHAR(20),
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create the Produit table
+CREATE TABLE produit (
+    id SERIAL PRIMARY KEY,
+    nom VARCHAR(255) NOT NULL,
+    description TEXT,
+    prix_unitaire DECIMAL(10, 2) NOT NULL,
+    stock_actuel INTEGER NOT NULL,
+    actif BOOLEAN DEFAULT TRUE,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create the Service table
+CREATE TABLE service (
+    id SERIAL PRIMARY KEY,
+    nom VARCHAR(255) NOT NULL,
+    description TEXT,
+    prix_unitaire DECIMAL(10, 2) NOT NULL,
+    actif BOOLEAN DEFAULT TRUE,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create the Tache table
+CREATE TABLE tache (
+    id SERIAL PRIMARY KEY,
+    nom VARCHAR(255) NOT NULL,
+    description TEXT,
+    date_debut TIMESTAMP NOT NULL,
+    date_fin TIMESTAMP,
+    frequence VARCHAR(50),
+    importance VARCHAR(50),
+    utilisateurId INTEGER NOT NULL,
+    FOREIGN KEY (utilisateurId) REFERENCES utilisateur(id) ON DELETE CASCADE
+);
+
+-- Create the Commande table
+CREATE TABLE commande (
+    id SERIAL PRIMARY KEY,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    numero VARCHAR(50),
+    total_cmd DECIMAL(10, 2) DEFAULT 0,
+    statut VARCHAR(50) NOT NULL,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    clientId INTEGER,
+    utilisateurId INTEGER,
+    FOREIGN KEY (clientId) REFERENCES client(id) ON DELETE SET NULL,
+    FOREIGN KEY (utilisateurId) REFERENCES utilisateur(id) ON DELETE SET NULL
+);
+
+-- Create the CommandeProduit table
+CREATE TABLE commandeProduit (
+    id SERIAL PRIMARY KEY,
+    quantite INTEGER NOT NULL,
+    prix_total DECIMAL(10, 2) NOT NULL,
+    produitId INTEGER NOT NULL,
+    commandeId INTEGER NOT NULL,
+    FOREIGN KEY (produitId) REFERENCES produit(id) ON DELETE CASCADE,
+    FOREIGN KEY (commandeId) REFERENCES commande(id) ON DELETE CASCADE,
+    UNIQUE (commandeId, produitId) -- Prevent duplicate product entries per order
+);
+
+-- Create the CommandeService table
+CREATE TABLE commandeService (
+    id SERIAL PRIMARY KEY,
+    quantite INTEGER NOT NULL,
+    prix_total DECIMAL(10, 2) NOT NULL,
+    serviceId INTEGER NOT NULL,
+    commandeId INTEGER NOT NULL,
+    FOREIGN KEY (serviceId) REFERENCES service(id) ON DELETE CASCADE,
+    FOREIGN KEY (commandeId) REFERENCES commande(id) ON DELETE CASCADE,
+    UNIQUE (commandeId, serviceId) -- Prevent duplicate service entries per order
+);
+
+-- Create the Facture table
+CREATE TABLE facture (
+    id SERIAL PRIMARY KEY,
+    code VARCHAR(50) NOT NULL,
+    numero VARCHAR(50) NOT NULL,
+    fichier VARCHAR(255) NOT NULL,
+    date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    commandeId INTEGER UNIQUE NOT NULL,
+    FOREIGN KEY (commandeId) REFERENCES commande(id) ON DELETE CASCADE
+);
+
+-- Create the Vente table
+CREATE TABLE vente (
+    id SERIAL PRIMARY KEY,
+    code VARCHAR(50) NOT NULL,
+    numero VARCHAR(50) NOT NULL,
+    montant DECIMAL(10, 2) NOT NULL,
+    statut VARCHAR(50) NOT NULL,
+    date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    commandeId INTEGER,
+    utilisateurId INTEGER,
+    FOREIGN KEY (commandeId) REFERENCES commande(id) ON DELETE SET NULL,
+    FOREIGN KEY (utilisateurId) REFERENCES utilisateur(id) ON DELETE SET NULL
+);
+
+-- Create the Recu table
+CREATE TABLE recu (
+    id SERIAL PRIMARY KEY,
+    code VARCHAR(50) NOT NULL,
+    numero VARCHAR(50) NOT NULL,
+    fichier VARCHAR(255) NOT NULL,
+    date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    venteId INTEGER NOT NULL,
+    FOREIGN KEY (venteId) REFERENCES vente(id) ON DELETE CASCADE
+);
+
+-- Optional: Create indexes for better performance (matching Prisma's behavior)
+CREATE INDEX idx_tache_utilisateurId ON tache(utilisateurId);
+CREATE INDEX idx_commande_clientId ON commande(clientId);
+CREATE INDEX idx_commande_utilisateurId ON commande(utilisateurId);
+CREATE INDEX idx_vente_commandeId ON vente(commandeId);
+CREATE INDEX idx_vente_utilisateurId ON vente(utilisateurId);
+CREATE INDEX idx_commandeproduit_commandeId ON commandeProduit(commandeId);
+CREATE INDEX idx_commandeservice_commandeId ON commandeService(commandeId);
+CREATE INDEX idx_facture_commandeId ON facture(commandeId);
+CREATE INDEX idx_recu_venteId ON recu(venteId);
+
+CREATE TABLE IF NOT EXISTS vente_item (
+  id SERIAL PRIMARY KEY,
+  vente_id INTEGER NOT NULL REFERENCES vente(id) ON DELETE CASCADE,
+  produit_id INTEGER REFERENCES produit(id) ON DELETE SET NULL,
+  service_id INTEGER REFERENCES service(id) ON DELETE SET NULL,
+  commande_id INTEGER REFERENCES commande(id) ON DELETE SET NULL,
+  nom TEXT,
+  quantite NUMERIC(12,2) NOT NULL DEFAULT 1,
+  prix_unitaire NUMERIC(14,2) NOT NULL DEFAULT 0,
+  total NUMERIC(14,2) NOT NULL DEFAULT 0,
+  actif BOOLEAN DEFAULT TRUE,
+  createdat TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updatedat TIMESTAMP WITH TIME ZONE,
+  deletedat TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX IF NOT EXISTS idx_vente_item_vente_id ON vente_item(vente_id);
+CREATE INDEX IF NOT EXISTS idx_vente_item_produit_id ON vente_item(produit_id);
+CREATE INDEX IF NOT EXISTS idx_vente_item_service_id ON vente_item(service_id);
+CREATE INDEX IF NOT EXISTS idx_vente_item_commande_id ON vente_item(commande_id);

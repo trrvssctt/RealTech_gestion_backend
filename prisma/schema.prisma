@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Define models in a logical order to avoid forward references
+model utilisateur {
+  id         Int      @id @default(autoincrement())
+  nom        String
+  prenom     String
+  email      String   @unique
+  telephone  String?
+  role       String
+  password   String
+  actif      Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  tache      tache[]
+  commande   commande[]
+  vente      vente[]
+}
+
+model client {
+  id        Int       @id @default(autoincrement())
+  nom       String
+  prenom    String?
+  email     String?
+  telephone String?
+  createdAt DateTime  @default(now())
+  commande  commande[]
+}
+
+model produit {
+  id           Int              @id @default(autoincrement())
+  nom          String
+  description  String?
+  prix_unitaire Float
+  stock_actuel Int
+  actif        Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  commandeProduit commandeProduit[]
+}
+
+model service {
+  id           Int              @id @default(autoincrement())
+  nom          String
+  description  String?
+  prix_unitaire Float
+  actif        Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  commandeService commandeService[]
+}
+
+model tache {
+  id          Int         @id @default(autoincrement())
+  nom         String
+  description String?
+  date_debut  DateTime
+  date_fin    DateTime
+  frequence   String?
+  importance  String?
+  utilisateur utilisateur @relation(fields: [utilisateurId], references: [id])
+  utilisateurId Int
+}
+
+model commande {
+  id            Int              @id @default(autoincrement())
+  code          String           @unique
+  numero        String
+  total_cmd     Float            @default(0)
+  montant_paye  Float            @default(0)
+  montant_restant Float          @default(0)
+  statut_paiement String?        @default("NON_PAYEE")
+  statut        String
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  clientId      Int?
+  client        client?          @relation(fields: [clientId], references: [id])
+  facture       facture?
+  commandeProduit commandeProduit[]
+  commandeService commandeService[]
+  vente         vente[]
+  utilisateur   utilisateur?     @relation(fields: [utilisateurId], references: [id])
+  utilisateurId Int?
+}
+
+model commandeProduit {
+  id        Int      @id @default(autoincrement())
+  quantite  Int
+  prix_total Float
+  produit   produit  @relation(fields: [produitId], references: [id])
+  produitId Int
+  commande  commande @relation(fields: [commandeId], references: [id])
+  commandeId Int
+}
+
+model commandeService {
+  id        Int      @id @default(autoincrement())
+  quantite  Int
+  prix_total Float
+  service   service  @relation(fields: [serviceId], references: [id])
+  serviceId Int
+  commande  commande @relation(fields: [commandeId], references: [id])
+  commandeId Int
+}
+
+model facture {
+  id        Int      @id @default(autoincrement())
+  code      String
+  numero    String
+  fichier   String
+  fichier_pdf String?
+  date      DateTime @default(now())
+  commande  commande @relation(fields: [commandeId], references: [id])
+  commandeId Int     @unique
+}
+
+model vente {
+  id            Int      @id @default(autoincrement())
+  code          String
+  numero        String
+  montant       Float
+  statut        String
+  date          DateTime @default(now())
+  commande      commande? @relation(fields: [commandeId], references: [id])
+  commandeId    Int?
+  recu          recu[]
+  utilisateur   utilisateur? @relation(fields: [utilisateurId], references: [id])
+  utilisateurId Int?
+}
+
+model recu {
+  id       Int      @id @default(autoincrement())
+  code     String
+  numero   String
+  fichier  String
+  fichier_pdf String?
+  date     DateTime @default(now())
+  venteId  Int
+  vente    vente    @relation(fields: [venteId], references: [id])
+}
