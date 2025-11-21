@@ -1,12 +1,12 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import { config } from './config/index.js'; // Ensure this file exists as index.ts
-import { connectDatabase } from './config/database.js'; // Ensure this file exists
-import { initializeUploadDirectories } from './utils/fileManager.js'; // Ensure this file exists
-import { logger } from './utils/logger.js'; // Ensure this file exists
-import { apiLimiter } from './middlewares/security.js'; // Ensure this file exists
-import { globalErrorHandler, notFound } from './middlewares/errorHandler.js'; // Ensure these files exist
+import { config } from './src/config/index.js'; // Ensure this file exists as index.ts
+import { connectDatabase } from './src/config/database.js'; // Ensure this file exists
+import { initializeUploadDirectories } from './src/utils/fileManager.js'; // Ensure this file exists
+import { logger } from './src/utils/logger.js'; // Ensure this file exists
+import { apiLimiter } from './src/middlewares/security.js'; // Ensure this file exists
+import { globalErrorHandler, notFound } from './src/middlewares/errorHandler.js'; // Ensure these files exist
 import routes from './routes/index.js'; // Ensure this file exists
 import dotenv from 'dotenv';
 dotenv.config();
