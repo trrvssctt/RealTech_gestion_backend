@@ -8,9 +8,9 @@ import {
   deleteProduct,
   restoreProduct,
 } from '../controllers/productController.js';
-import { authenticate, authorize } from '../middlewares/auth.js';
-import { allowCreateProductIfAssigned } from '../middlewares/taskAuth.js';
-import { validateBody, validateQuery, validateParams } from '../middlewares/validation.js';
+import { authenticate, authorize } from '../src/middlewares/auth.js';
+import { allowCreateProductIfAssigned } from '../src/middlewares/taskAuth.js';
+import { validateBody, validateQuery, validateParams } from '../src/middlewares/validation.js';
 import {
   createProductSchema,
   updateProductSchema,
