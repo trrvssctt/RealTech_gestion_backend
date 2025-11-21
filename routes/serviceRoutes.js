@@ -7,9 +7,9 @@ import {
   deleteService,
   restoreService,
 } from '../controllers/serviceController.js';
-import { authenticate, authorize } from '../middlewares/auth.js';
-import { allowCreateServiceIfAssigned } from '../middlewares/taskAuth.js';
-import { validateBody, validateQuery, validateParams } from '../middlewares/validation.js';
+import { authenticate, authorize } from '../src/middlewares/auth.js';
+import { allowCreateServiceIfAssigned } from '../src/middlewares/taskAuth.js';
+import { validateBody, validateQuery, validateParams } from '../src/middlewares/validation.js';
 import {
   createServiceSchema,
   updateServiceSchema,
