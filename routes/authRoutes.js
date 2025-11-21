@@ -7,9 +7,9 @@ import {
   changePassword, 
   logout 
 } from '../controllers/authController.js';
-import { authenticate, authorize } from '../middlewares/auth.js';
-import { validateBody } from '../middlewares/validation.js';
-import { authLimiter } from '../middlewares/security.js';
+import { authenticate, authorize } from '../src/middlewares/auth.js';
+import { validateBody } from '../src/middlewares/validation.js';
+import { authLimiter } from '../src/middlewares/security.js';
 import { 
   loginSchema, 
   registerSchema, 
