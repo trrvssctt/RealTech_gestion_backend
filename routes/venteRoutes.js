@@ -1,7 +1,7 @@
 // src/routes/venteRoutes.ts (updated with all methods)
 import express from 'express';
 import { createVente, getVentes, getVenteById, updateVente, deleteVente } from '../controllers/venteController.js';
-import { authMiddleware } from '../middlewares/auth.js';
+import { authMiddleware } from '../src/middlewares/auth.js';
 
 const router = express.Router();
 
