@@ -5,7 +5,7 @@ import {
   getTopProducts,
   getRecentActivity,
 } from '../controllers/dashboardController.js';
-import { authenticate, authorize } from '../middlewares/auth.js';
+import { authenticate, authorize } from '../src/middlewares/auth.js';
 
 const router = Router();
 
