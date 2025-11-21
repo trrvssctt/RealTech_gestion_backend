@@ -10,7 +10,7 @@ import userRoutes from './userRoutes.js';
 import dashboardRoutes from './dashboardRoutes.js';
 import settingsRoutes from './settingsRoutes.js';
 import inventoryRoutes from './inventoryRoutes.js';
-import { authenticate } from '../middlewares/auth.js';
+import { authenticate } from '../src/middlewares/auth.js';
 
 const router = express.Router();
 
