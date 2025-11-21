@@ -9,8 +9,8 @@ import {
   reactivateUser,
   getEmployeeStats,
 } from '../controllers/useurController.js';
-import { authenticate, authorize } from '../middlewares/auth.js';
-import { validateBody, validateQuery, validateParams } from '../middlewares/validation.js';
+import { authenticate, authorize } from '../src/middlewares/auth.js';
+import { validateBody, validateQuery, validateParams } from '../src/middlewares/validation.js';
 import {
   createUserSchema,
   updateUserSchema,
