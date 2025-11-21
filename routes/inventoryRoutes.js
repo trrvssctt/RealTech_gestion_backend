@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { listMovements, createMovement } from '../controllers/inventoryController.js';
-import { authenticate, authorize } from '../middlewares/auth.js';
-import { validateBody, validateQuery } from '../middlewares/validation.js';
+import { authenticate, authorize } from '../src/middlewares/auth.js';
+import { validateBody, validateQuery } from '../src/middlewares/validation.js';
 
 const router = Router();
 
