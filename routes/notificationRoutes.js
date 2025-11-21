@@ -1,6 +1,6 @@
 import express from 'express';
 import { listNotifications, markNotificationRead } from '../controllers/notificationController.js';
-import { authenticate } from '../middlewares/auth.js';
+import { authenticate } from '../src/middlewares/auth.js';
 
 const router = express.Router();
 
