@@ -44,6 +44,17 @@ if (config.FRONTEND_URL && !allowedOrigins.includes(config.FRONTEND_URL)) {
   allowedOrigins.push(config.FRONTEND_URL);
 }
 
+// Also accept both http/https and www/non-www variants for realtech domains to match browser Origin headers
+const realtechVariants = [
+  'https://www.realtechprint.com',
+  'https://realtechprint.com',
+  'http://www.realtechprint.com',
+  'http://realtechprint.com',
+];
+for (const o of realtechVariants) {
+  if (!allowedOrigins.includes(o)) allowedOrigins.push(o);
+}
+
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (e.g., mobile clients, curl, server-to-server)
