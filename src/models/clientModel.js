@@ -6,9 +6,24 @@ async function createClient({ nom, prenom, email, telephone, actif = true }) {
     VALUES ($1, $2, $3, $4, $5)
     RETURNING *
   `;
-  const values = [nom, prenom, email, telephone, actif];
-  const { rows } = await pool.query(sql, values);
-  return rows[0];
+  const normalizedNom = (typeof nom === 'string' && nom.trim().length > 0) ? nom.trim() : null;
+  const normalizedPrenom = (typeof prenom === 'string' && prenom.trim().length > 0) ? prenom.trim() : null;
+  const normalizedEmail = (typeof email === 'string' && email.trim().length > 0) ? email.trim() : null;
+  const values = [normalizedNom, normalizedPrenom, normalizedEmail, telephone, actif];
+
+  try {
+    const { rows } = await pool.query(sql, values);
+    return rows[0];
+  } catch (err) {
+    // log DB error for easier debugging, then rethrow so global handler le capture
+    try {
+      logger && logger.error && logger.error('DB error in createClient', { error: err.message, values });
+    } catch (e) {
+      console.error('DB error in createClient', err, values);
+    }
+    // propagate original error (globalErrorHandler will wrap it)
+    throw err;
+  }
 }
 
 async function getClientById(id) {
