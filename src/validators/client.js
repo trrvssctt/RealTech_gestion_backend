@@ -1,10 +1,29 @@
 import { z } from 'zod';
 
+const optionalNonEmptyString = z.preprocess((v) => {
+  if (typeof v === 'string') {
+    const t = v.trim();
+    return t === '' ? undefined : t;
+  }
+  return v;
+}, z.string().min(1).optional());
+
 export const createClientSchema = z.object({
-  nom: z.string().min(2, 'Nom doit contenir au moins 2 caractères'),
-  prenom: z.string().min(2, 'Prénom doit contenir au moins 2 caractères'),
-  email: z.string().email('Email invalide').optional(),
-  telephone: z.string().optional(),
+  nom: z.preprocess((v) => (typeof v === 'string' ? v.trim() : v), z.string().min(2, 'Nom doit contenir au moins 2 caractères').optional()),
+  prenom: z.preprocess((v) => (typeof v === 'string' ? v.trim() : v), z.string().min(2, 'Prénom doit contenir au moins 2 caractères').optional()),
+  // Preprocess: empty string => undefined, then allow undefined or valid email
+  email: z.preprocess((v) => {
+    if (typeof v === 'string') {
+      const t = v.trim();
+      return t === '' ? undefined : t;
+    }
+    return v;
+  }, z.string().email('Email invalide').optional()),
+  // telephone should be required and min length 4
+  telephone: z.preprocess((v) => (typeof v === 'string' ? v.trim() : v), z.string().min(4, 'Téléphone invalide')),
+}).refine(data => Boolean((data.nom && data.nom.trim().length >= 2) || (data.prenom && data.prenom.trim().length >= 2)), {
+  message: 'Au moins un nom ou prénom (2 caractères min) est requis',
+  path: ['nom', 'prenom'],
 });
 
 export const updateClientSchema = z.object({
