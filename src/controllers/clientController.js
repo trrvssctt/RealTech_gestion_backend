@@ -60,7 +60,20 @@ export const getClientById = asyncHandler(async (req, res) => {
  * Create new client
  */
 export const createClient = asyncHandler(async (req, res) => {
-  const clientData = req.body;
+  const clientData = { ...req.body };
+
+  // Trim strings if present
+  if (typeof clientData.nom === 'string') clientData.nom = clientData.nom.trim();
+  if (typeof clientData.prenom === 'string') clientData.prenom = clientData.prenom.trim();
+  if (typeof clientData.email === 'string') clientData.email = clientData.email.trim();
+  if (typeof clientData.telephone === 'string') clientData.telephone = clientData.telephone.trim();
+
+  // Normaliser l'email : transformer '' ou undefined en null pour la DB
+  clientData.email = (clientData.email && clientData.email.length > 0) ? clientData.email : null;
+
+  // Normaliser nom/prenom vers null si vides
+  clientData.nom = (clientData.nom && clientData.nom.length > 0) ? clientData.nom : null;
+  clientData.prenom = (clientData.prenom && clientData.prenom.length > 0) ? clientData.prenom : null;
 
   const client = await ClientModel.createClient(clientData);
 
@@ -70,6 +83,8 @@ export const createClient = asyncHandler(async (req, res) => {
     message: 'Client créé avec succès',
   });
 });
+
+
 
 /**
  * Update client
