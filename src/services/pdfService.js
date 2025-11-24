@@ -12,8 +12,31 @@ export const generateInvoicePNG = async (invoiceData) => {
     const fileName = `facture-${invoiceData.numero}.png`;
     const filePath = path.join(folderPath, fileName);
 
+    // Normalize items: merge invoiceData.produits, invoiceData.services, invoiceData.items
+    const rawItems = [];
+    if (Array.isArray(invoiceData.items)) rawItems.push(...invoiceData.items);
+    if (Array.isArray(invoiceData.produits)) rawItems.push(...invoiceData.produits.map(p => ({ ...p, type: 'Produit' })));
+    if (Array.isArray(invoiceData.services)) rawItems.push(...invoiceData.services.map(s => ({ ...s, type: 'Service' })));
+
+    // Ensure each item has nom, quantite, prix_unitaire, total, type
+    const items = rawItems.map((it = {}) => {
+      const nom = String(it.nom || it.designation || it.name || (it.produit && (it.produit.nom || it.produit.name)) || (it.service && (it.service.nom || it.service.name)) || '').trim();
+      const quantite = Number(it.quantite || it.qte || it.qty || 0);
+      const prix_unitaire = Number(it.prix_unitaire || it.unit_price || it.price || (it.produit && (it.produit.prix_unitaire || it.produit.price)) || (it.service && (it.service.prix_unitaire || it.service.price)) || 0);
+      const total = Number(it.total || (prix_unitaire * quantite));
+      const type = String(it.type || (it.produit ? 'Produit' : (it.service ? 'Service' : '')));
+      return { nom, quantite, prix_unitaire, total, type };
+    });
+
+    // Compute canvas height dynamically based on number of items (rowHeight)
+    const rowHeight = 28;
+    const baseHeight = 700; // header + client + margins
+    const estimatedTableHeight = Math.max(200, items.length * (rowHeight + 8));
+    const totalsArea = 260;
+    const canvasHeight = Math.max(900, baseHeight + estimatedTableHeight + totalsArea);
+
     // A4-like canvas for better print/layout (px)
-    const canvas = createCanvas(1000, 1400);
+    const canvas = createCanvas(1000, canvasHeight);
     const ctx = canvas.getContext('2d');
 
     // White background
@@ -105,10 +128,7 @@ export const generateInvoicePNG = async (invoiceData) => {
         ctx.fillText(company.email, leftStart, curY);
         curY += 18;
       }
-      if (company.numero_fiscal || company.tax_number) {
-        ctx.fillText(`N° TVA: ${company.numero_fiscal || company.tax_number}`, leftStart, curY);
-        curY += 18;
-      }
+      // Do not display VAT number on invoices per request
     } else {
       ctx.fillText('RealTech Holding - Boutique Informatique', leftStart, curY);
       curY += 18;
@@ -155,7 +175,7 @@ export const generateInvoicePNG = async (invoiceData) => {
     ctx.textAlign = 'center';
     ctx.fillText('Qté', tableX + Math.floor(tableW * 0.45), tableY);
     ctx.fillText('PU (F CFA)', tableX + Math.floor(tableW * 0.6), tableY);
-    ctx.fillText('TVA', tableX + Math.floor(tableW * 0.78), tableY);
+    // TVA column removed
     ctx.textAlign = 'right';
     ctx.fillText('Total (F CFA)', tableX + tableW - 10, tableY);
 
@@ -164,28 +184,23 @@ export const generateInvoicePNG = async (invoiceData) => {
     ctx.fillStyle = '#000000';
     ctx.textAlign = 'left';
     tableY += 28;
-    const rowHeight = 28;
-    const items = invoiceData.items || [];
+    const itemsRowHeight = rowHeight;
     items.forEach(item => {
-      // name
-      const name = (item.nom || item.description || '').toString();
+      const name = (item.nom || '').toString();
       ctx.textAlign = 'left';
-      ctx.fillText(name.substring(0, 60), tableX + 10, tableY + 18);
+      ctx.fillText(name.substring(0, 100), tableX + 10, tableY + 18);
       // qty
       ctx.textAlign = 'center';
       ctx.fillText(String(item.quantite || 0), tableX + Math.floor(tableW * 0.45), tableY + 18);
       // unit price
-      const unit = Number(item.prix_unitaire || item.unit_price || 0);
+      const unit = Number(item.prix_unitaire || 0);
       ctx.fillText(unit.toFixed(2), tableX + Math.floor(tableW * 0.6), tableY + 18);
-      // tva (percent)
-      const tvaLabel = item.tva_percent != null ? `${Number(item.tva_percent).toFixed(0)}%` : (invoiceData.tax_rate ? `${Number(invoiceData.tax_rate).toFixed(0)}%` : '0%');
-      ctx.fillText(tvaLabel, tableX + Math.floor(tableW * 0.78), tableY + 18);
       // total
       ctx.textAlign = 'right';
       const totalLine = Number(item.total || (unit * (item.quantite || 0)));
       ctx.fillText(totalLine.toFixed(2), tableX + tableW - 10, tableY + 18);
 
-      tableY += rowHeight;
+      tableY += itemsRowHeight;
     });
 
     // Draw a separator line
@@ -197,7 +212,7 @@ export const generateInvoicePNG = async (invoiceData) => {
     ctx.stroke();
 
     // Totals
-    const subtotal = items.reduce((s, it) => s + Number(it.total || (Number(it.prix_unitaire || it.unit_price || 0) * (it.quantite || 0))), 0);
+    const subtotal = items.reduce((s, it) => s + Number(it.total || (Number(it.prix_unitaire || 0) * (it.quantite || 0))), 0);
     const discount = Number(invoiceData.discount || 0);
     const taxRate = Number(invoiceData.tax_rate || 0);
     const tax = ((subtotal - discount) * taxRate) / 100;
@@ -221,10 +236,7 @@ export const generateInvoicePNG = async (invoiceData) => {
       ctx.fillText(`Remise: -${discount.toFixed(2)} F CFA`, totalsBoxX + totalsBoxW - 14, totalsY + 12);
       totalsY += 26;
     }
-    if (taxRate && taxRate > 0) {
-      ctx.fillText(`TVA (${taxRate.toFixed(0)}%): ${tax.toFixed(2)} F CFA`, totalsBoxX + totalsBoxW - 14, totalsY + 12);
-      totalsY += 26;
-    }
+    // Do not display VAT totals (taxRate) — invoices shouldn't include a TVA line
 
     ctx.font = 'bold 16px Arial';
     ctx.fillStyle = '#0f172a';
